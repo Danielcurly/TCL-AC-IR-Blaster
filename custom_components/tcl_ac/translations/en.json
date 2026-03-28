@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar TCL AC IR Blaster",
+        "data": {
+          "name": "Nombre",
+          "zigbee2mqtt_emitter": "Zigbee2MQTT Emitter",
+          "temperature_sensor_entity": "Temperature Sensor Entity"
+        }
+      }
+    }
+  }
+}

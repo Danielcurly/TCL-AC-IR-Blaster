@@ -1,0 +1,5 @@
+{
+  "name": "TCL AC IR Blaster",
+  "render_readme": true,
+  "description": "Home Assistant integration for TCL Air Conditioners using Infrared (IR) via Zigbee2MQTT."
+}
