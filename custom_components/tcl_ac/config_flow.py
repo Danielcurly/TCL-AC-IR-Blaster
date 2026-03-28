@@ -58,29 +58,31 @@ class TclAcOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
+    async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        current_device = self.config_entry.options.get(
+            CONF_DEVICE, self.config_entry.data.get(CONF_DEVICE)
+        )
+        if current_device is None:
+            current_device = ""
+            
+        current_sensor = self.config_entry.options.get(
+            CONF_SENSOR, self.config_entry.data.get(CONF_SENSOR)
+        )
+        
+        schema_dict = {
+            vol.Required(CONF_DEVICE, default=current_device): str,
+        }
+        
+        if current_sensor is not None:
+            schema_dict[vol.Optional(CONF_SENSOR, default=current_sensor)] = str
+        else:
+            schema_dict[vol.Optional(CONF_SENSOR)] = str
+
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_DEVICE,
-                        default=self.config_entry.options.get(
-                            CONF_DEVICE, self.config_entry.data.get(CONF_DEVICE)
-                        ),
-                    ): str,
-                    vol.Optional(
-                        CONF_SENSOR,
-                        default=self.config_entry.options.get(
-                            CONF_SENSOR, self.config_entry.data.get(CONF_SENSOR)
-                        ),
-                    ): str,
-                }
-            ),
+            data_schema=vol.Schema(schema_dict),
         )
