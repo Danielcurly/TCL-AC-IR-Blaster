@@ -17,15 +17,11 @@ class TclAcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> config_entries.OptionsFlow:
+    def async_get_options_flow(config_entry):
         """Create the options flow."""
         return TclAcOptionsFlowHandler(config_entry)
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Handle the initial step."""
         errors: dict[str, str] = {}
 
@@ -54,7 +50,7 @@ class TclAcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class TclAcOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle a options flow for TCL AC."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, config_entry):
         """Initialize options flow."""
         self.config_entry = config_entry
 
