@@ -53,6 +53,11 @@ class TclAcOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
+            new_title = user_input.pop(CONF_NAME, self.config_entry.title)
+            if new_title != self.config_entry.title:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, title=new_title
+                )
             return self.async_create_entry(title="", data=user_input)
 
         current_device = self.config_entry.options.get(
@@ -66,6 +71,7 @@ class TclAcOptionsFlowHandler(config_entries.OptionsFlow):
         )
         
         schema_dict = {
+            vol.Required(CONF_NAME, default=self.config_entry.title): str,
             vol.Required(CONF_DEVICE, default=current_device): str,
         }
         

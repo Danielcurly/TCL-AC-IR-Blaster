@@ -19,7 +19,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up TCL AC number (timer) from a config entry."""
-    name = config_entry.data.get(CONF_NAME)
+    name = config_entry.title
     shared_data = hass.data[DOMAIN][config_entry.entry_id]
 
     async_add_entities([TclTimerNumber(name, config_entry.entry_id, shared_data)])

@@ -18,6 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN, CONF_DEVICE, CONF_SENSOR
 from .tcl_protocol import generate_code
@@ -47,7 +48,7 @@ async def async_setup_entry(
     async_add_entities([climate_entity])
 
 
-class TclClimate(ClimateEntity):
+class TclClimate(ClimateEntity, RestoreEntity):
     """TCL AC Climate Entity."""
 
     _attr_has_entity_name = True
@@ -71,6 +72,31 @@ class TclClimate(ClimateEntity):
 
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
+        await super().async_added_to_hass()
+
+        last_state = await self.async_get_last_state()
+        if last_state and last_state.state not in ("unknown", "unavailable"):
+            if last_state.state in self.hvac_modes:
+                self._hvac_mode = HVACMode(last_state.state)
+
+            if "temperature" in last_state.attributes:
+                try:
+                    self._target_temp = float(last_state.attributes["temperature"])
+                except (ValueError, TypeError):
+                    pass
+
+            fan_mode = last_state.attributes.get("fan_mode")
+            if fan_mode in self.fan_modes:
+                self._fan_mode = fan_mode
+
+            preset_mode = last_state.attributes.get("preset_mode")
+            if preset_mode in self.preset_modes:
+                self._preset_mode = preset_mode
+
+            swing_mode = last_state.attributes.get("swing_mode")
+            if swing_mode in self.swing_modes:
+                self._swing_mode = swing_mode
+
         if self._sensor_id:
             async_track_state_change_event(
                 self.hass, self._sensor_id, self._async_sensor_changed
