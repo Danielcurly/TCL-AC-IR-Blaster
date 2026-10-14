@@ -1,6 +1,8 @@
 """Climate platform for TCL AC."""
+import asyncio
 import logging
 import json
+import time
 
 from homeassistant.components.climate import (
     ClimateEntity,
@@ -24,6 +26,12 @@ from .const import DOMAIN, CONF_DEVICE, CONF_SENSOR
 from .tcl_protocol import generate_code
 
 _LOGGER = logging.getLogger(__name__)
+
+# The IR blaster receives each code in several Zigbee frames: a second code sent while the first
+# is still transferring corrupts both. Calls arriving together collapse into one code with the
+# final state, and consecutive codes keep a minimum gap.
+SEND_DEBOUNCE = 0.5
+SEND_MIN_GAP = 2.0
 
 
 async def async_setup_entry(
@@ -69,6 +77,10 @@ class TclClimate(ClimateEntity, RestoreEntity):
         self._preset_mode = PRESET_NONE
         self._swing_mode = SWING_OFF
         self._current_temp = None
+
+        self._send_task = None
+        self._send_lock = asyncio.Lock()
+        self._last_send = 0.0
 
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
@@ -225,7 +237,26 @@ class TclClimate(ClimateEntity, RestoreEntity):
         await self.async_send_command()
         self.async_write_ha_state()
 
+    async def async_will_remove_from_hass(self):
+        if self._send_task and not self._send_task.done():
+            self._send_task.cancel()
+
     async def async_send_command(self):
+        """Schedule an IR send; a newer call replaces a pending one."""
+        if self._send_task and not self._send_task.done():
+            self._send_task.cancel()
+        self._send_task = self.hass.async_create_task(self._async_send_debounced())
+
+    async def _async_send_debounced(self):
+        await asyncio.sleep(SEND_DEBOUNCE)
+        async with self._send_lock:
+            wait = self._last_send + SEND_MIN_GAP - time.monotonic()
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self._last_send = time.monotonic()
+            await self._async_publish_code()
+
+    async def _async_publish_code(self):
         power_off = self._hvac_mode == HVACMode.OFF
 
         mode_map = {
